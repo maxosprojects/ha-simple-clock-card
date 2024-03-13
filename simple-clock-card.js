@@ -23,7 +23,7 @@ class SimpleClockCard extends HTMLElement {
 		startTime();
 		setInterval(startTime, 1000);
 
-		function addZero(i) {
+		function prefixZero(i) {
 			if (i < 10) {
 				i = "0" + i;
 			}
@@ -36,15 +36,15 @@ class SimpleClockCard extends HTMLElement {
 				m = today.getMinutes(),
 				s = today.getSeconds(),
 				p = (h < 12) ? "AM" : "PM";
-			m = addZero(m);
-			s = addZero(s);
+			m = prefixZero(m);
+			s = prefixZero(s);
 
 			let use_military = config.use_military !== undefined ? config.use_military : true;
 			let hide_seconds = config.hide_seconds !== undefined ? config.hide_seconds : false;
 			let hide_am_pm = config.hide_am_pm !== undefined ? config.hide_am_pm : false;
 			let lead_zero = config.lead_zero !== undefined ? config.lead_zero : false;
 
-			let time_str = (use_military ? (lead_zero ? addZero(h) : h) : ((h + 11) % 12) + 1) +
+			let time_str = (use_military ? (lead_zero ? prefixZero(h) : h) : ((h + 11) % 12) + 1) +
 				":" +
 				m +
 				(hide_seconds ? "" : ":" + s) +
