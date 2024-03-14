@@ -1,4 +1,13 @@
+let intervalIds = {
+	time: null,
+	liveness: null
+};
+
 class SimpleClockCard extends HTMLElement {
+	constructor() {
+		super();
+		// console.log('contructor called', intervalIds);
+	}
 
 	set hass(hass) {
 		if (this.content) {
@@ -20,14 +29,50 @@ class SimpleClockCard extends HTMLElement {
 		card.appendChild(this.content);
 		this.appendChild(card);
 		var content = this.content;
+		let videoEl = null;
 		startTime();
-		setInterval(startTime, 1000);
+
+		if (intervalIds.time !== null) {
+			clearInterval(intervalIds.time);
+		}
+		intervalIds.time = setInterval(startTime, 1000);
+
+		if (intervalIds.liveness !== null) {
+			clearInterval(intervalIds.liveness);
+		}
+		intervalIds.liveness = setInterval(updateLiveness, 2000);
 
 		function prefixZero(i) {
 			if (i < 10) {
 				i = "0" + i;
 			}
 			return i;
+		}
+
+		function querySelectorAllWithShadow(el, selector) {
+			let expectedNodes = el.querySelectorAll(selector);
+			if (expectedNodes.length > 0) {
+				return expectedNodes;
+			}
+			let nodes = el.querySelectorAll('*');
+			for (let i = 0; i < nodes.length; i++) {
+				let node = nodes[i];
+				expectedNodes = node.querySelectorAll(selector);
+				if (expectedNodes.length > 0) {
+					return expectedNodes;
+				}
+				if (node.shadowRoot) {
+					expectedNodes = querySelectorAllWithShadow(node.shadowRoot, selector);
+				}
+				if (expectedNodes.length > 0) {
+					return expectedNodes;
+				}
+				expectedNodes = querySelectorAllWithShadow(node, selector);
+				if (expectedNodes.length > 0) {
+					return expectedNodes;
+				}
+			}
+			return expectedNodes;
 		}
 
 		function startTime() {
@@ -50,6 +95,32 @@ class SimpleClockCard extends HTMLElement {
 				(hide_seconds ? "" : ":" + s) +
 				(use_military ? " " : " " + (hide_am_pm ? "" : p));
 			content.innerHTML = time_str;
+		}
+
+		function updateLiveness() {
+			if (!videoEl) {
+				let nodes = querySelectorAllWithShadow(document, 'video');
+				if (nodes.length == 0) {
+					// console.log("didn't find video element");
+					return;
+				}
+				if (nodes.length > 1) {
+					// console.log("found more video elements than expected");
+					return;
+				}
+				videoEl = nodes[0];
+				// console.log("found video element", videoEl);
+			}
+
+			// console.log(videoEl.currentTime);
+
+			hass.callApi(
+				'post',
+				'states/input_number.nest_hub_cast_liveness_video_curr_time',
+				{ state: Math.trunc(videoEl.currentTime) }
+			)
+				// .then(resp => console.log('Received resp:', resp))
+				.catch(err => console.log('There was an error while updating nest_hub_cast_liveness_video_curr_time', err));
 		}
 	}
 
